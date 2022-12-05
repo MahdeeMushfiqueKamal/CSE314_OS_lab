@@ -35,14 +35,18 @@ do
     student_id=$((1805120+i))
     if [ -e ./ans/$student_id.txt ]; then    
         echo "Checking solution of $student_id"  
-        num_of_diff=`diff ans/$student_id.txt AcceptedOutput.txt -w -b | grep '<\|>' | wc -l`
+        num_of_diff=`diff ans/$student_id.txt AcceptedOutput.txt -w| grep '<\|>' | wc -l`
         student_mark=$(( MAX_SCORE -  num_of_diff*5))
+        # handle negative mark case.
+        if [ $student_mark -lt $((0)) ]; then
+            student_mark=0
+        fi
         # Copy checker
         for (( j=1; j<= MAX_STUDENT_ID; j++ ))
         do
             student_id_2=$((1805120+j))
             if [ $i -ne $j -a -e ./ans/$student_id_2.txt ]; then
-                changes=`diff ans/$student_id.txt ans/$student_id_2.txt | wc -l`
+                changes=`diff ans/$student_id.txt ans/$student_id_2.txt -Z -B| wc -l`
                 if [ $changes -eq $((0)) ]; then
                     echo "$student_id copied from $student_id_2"
                     (( student_mark = -$student_mark ))
