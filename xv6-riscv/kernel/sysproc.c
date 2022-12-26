@@ -89,3 +89,14 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_trace(void)
+{
+	argint(0, &myproc()->trace);
+
+	// return 0;
+  // eita complete kora lagbe
+  // printf("Hello from sys_trace\n");
+  return 0;
+}
