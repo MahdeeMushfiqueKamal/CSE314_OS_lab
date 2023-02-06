@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.json": "json",
+        "unistd.h": "c",
+        "zemaphore.h": "c"
+    }
+}
