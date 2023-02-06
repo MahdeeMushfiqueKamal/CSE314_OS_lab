@@ -1,3 +1,3 @@
 #!bin/bash
-g++ barbar_zemaphore.c -o barbar_zemaphore -lpthread
+g++ zemaphore.c barbar_zemaphore.c -o barbar_zemaphore -lpthread
 ./barbar_zemaphore
