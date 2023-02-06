@@ -1,69 +1,86 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <unistd.h>
 #include "zemaphore.h"
 
 #define NUM_CHAIRS 5
 #define NUM_CUSTOMERS 10
 
-sem_t* barber;
-sem_t* customer;
-sem_t* mutex;
+zem_t* barber;
+zem_t* customer;
+zem_t* mutex;
 int waiting = 0;
 
 void *barberThread(void *arg) {
+  int BARBAR_PROCESSING_TIME = *(int*)arg;
+  printf("BARBAR PROCESSING TIME: %d\n", BARBAR_PROCESSING_TIME); 
   while (1) {
-    sem_wait(customer);
-    sem_wait(mutex);
+    zem_down(customer);
+    zem_down(mutex);
     waiting--;
-    sem_post(barber);
-    sem_post(mutex);
+    printf("Waiting = %d\n", waiting);
+    zem_up(barber);
+    zem_up(mutex);
     printf("Barber is cutting hair.\n");
-    int sleeptime = rand()%3 + 1;
-    sleep(sleeptime);
+    sleep(BARBAR_PROCESSING_TIME);
   }
   return NULL;
 }
 
 void *customerThread(void *arg) {
-  sem_wait(mutex);
+  int customer_id = *(int*)arg;
+  zem_down(mutex);
   if (waiting < NUM_CHAIRS) {
     waiting++;
-    sem_post(customer);
-    sem_post(mutex);
-    sem_wait(barber);
-    printf("Customer is getting a haircut.\n");
+    zem_up(customer);
+    zem_up(mutex);
+    zem_down(barber);
+    printf("Customer %d is getting a haircut.\n", customer_id);
   } else {
-    sem_post(mutex);
-    printf("Customer leaves the barber shop.\n");
+    zem_up(mutex);
+    printf("Customer %d leaves the barber shop.\n", customer_id);
   }
   return NULL; 
 }
 
 int main(void) {
-  barber = (sem_t*) malloc(sizeof(sem_t));
-  customer = (sem_t*) malloc(sizeof(sem_t));
-  mutex = (sem_t*) malloc(sizeof(sem_t));
+  barber = (zem_t*) malloc(sizeof(zem_t));
+  customer = (zem_t*) malloc(sizeof(zem_t));
+  mutex = (zem_t*) malloc(sizeof(zem_t));
 
-  pthread_t barber_id;
-  pthread_t customer_id[NUM_CUSTOMERS];
-  sem_init(barber, 0, 0);
-  sem_init(customer, 0, 0);
-  sem_init(mutex, 0, 1);
-  pthread_create(&barber_id, NULL, barberThread, NULL);
+  pthread_t barber_thread;
+  pthread_t customer_thread[NUM_CUSTOMERS];
+  zem_init(barber, 1);
+  zem_init(customer, 1);
+  zem_init(mutex, 1);
+  int *BARBAR_PROCESSING_TIME = (int*)malloc(sizeof(int));
+  *BARBAR_PROCESSING_TIME = 2;
+  pthread_create(&barber_thread, NULL, barberThread, BARBAR_PROCESSING_TIME);
   for (int i = 0; i < NUM_CUSTOMERS; i++) {
-    pthread_create(&customer_id[i], NULL, customerThread, NULL);
-    int sleeptime = rand()%1 + 5;
+    int *customer_id = (int*)malloc(sizeof(int));
+    *customer_id = i;
+    pthread_create(&customer_thread[i], NULL, customerThread, customer_id);
+    int sleeptime = rand()%1 + 0;
     sleep(sleeptime);
   }
-  pthread_join(barber_id, NULL);
+
+  
+  sleep(45);
+  printf("A customer came after a log time.\n");
+  pthread_t late_customer_thread; 
+  int *customer_id = (int*)malloc(sizeof(int));
+  *customer_id = NUM_CUSTOMERS;
+  pthread_create(&late_customer_thread, NULL, customerThread, customer_id);
+
+  pthread_join(barber_thread, NULL);
   for (int i = 0; i < NUM_CUSTOMERS; i++) {
-    pthread_join(customer_id[i], NULL);
+    pthread_join(customer_thread[i], NULL);
   }
-  sem_destroy(barber);
-  sem_destroy(customer);
-  sem_destroy(mutex);
+  pthread_join(late_customer_thread, NULL);
+
+  free(barber);
+  free(customer);
+  free(mutex);
   return 0;
 }
